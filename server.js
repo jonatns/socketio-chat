@@ -1,12 +1,16 @@
 var app = require('express')();
+var express = require('express');
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
+
+app.use(express.static('public'));
 
 app.get('/', function(req, res) {
   res.sendFile(__dirname + '/index.html');
 });
 
 var users = [];
+var me = '';
 
 io.on('connection', function(socket){
     users.push({id: socket.client.id, nickname: ''});
@@ -14,7 +18,7 @@ io.on('connection', function(socket){
     for(var i = 0; i < users.length; i++) {
       if(users[i].id === socket.client.id) {
         if(users[i].nickname === '') {
-          io.emit('chat message', 'anonynous left');
+          io.emit('chat message', 'anonymous left');
         }
         else {
           io.emit('chat message', users[i].nickname + ' left');
@@ -32,7 +36,7 @@ io.on('connection', function(socket){
       }
     }
     if(nickname === '') {
-      socket.broadcast.emit('chat message', 'anonynous: ' + msg);
+      socket.broadcast.emit('chat message', 'anonymous: ' + msg);
     }
     else {
       socket.broadcast.emit('chat message', nickname + ': ' + msg);

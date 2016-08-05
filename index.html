@@ -2,41 +2,76 @@
 <html>
   <head>
     <title>Socket.IO chat</title>
-    <style>
-      * { margin: 0; padding: 0; box-sizing: border-box; }
-      body { font: 13px Helvetica, Arial; }
-      form { background: #000; padding: 3px; position: fixed; bottom: 0; width: 100%; }
-      #nickname { border: 0; padding: 10px; width: 15%; margin-right: 0; }
-      #message { border: 0; padding: 10px; width: 70%; margin-right: 0; }
-      #submit { width: 12%; background: rgb(130, 224, 255); border: none; padding: 10px; }
-      #messages { list-style-type: none; margin: 0; padding: 0; }
-      #messages li { padding: 5px 10px; }
-      #messages li:nth-child(odd) { background: #eee; }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="css/skeleton.css">
+    <link rel="stylesheet" href="css/style.css">
   </head>
+
   <body>
-    <ul id="messages"></ul>
-    <form action="">
-      <input id="nickname" placeholder="nickname" autocomplete="off" />
-      <input id="message" placeholder="message" autocomplete="off" />
-      <button id="submit">Send</button>
-    </form>
+
+      <div class="message-container">
+          <div class="container">
+            <div class="row">
+              <div class="twelve columns">
+                <table id="messages" class="u-full-width">
+                </table>
+              </div>
+            </div>
+          </div>
+      </div>
+
+        <div class="footer-container">
+          <div class="container">
+            <footer id="footer" class="twelve columns">
+              <form>
+                <div class="row">
+                  <div class="two columns">
+                    <input class="u-full-width" type="text" id="nickname" placeholder="nickname">
+                  </div>
+                  <div class="eight columns">
+                    <input class="u-full-width" type="text" id="message" placeholder="message">
+                  </div>
+                  <div class="two columns">
+                    <button id="submit" class="button-primary" disabled="disabled">Send</button>
+                  </div>
+                </div>
+              </form>
+            </footer>
+          </div>
+        </div>
+
   </body>
+
   <script src="/socket.io/socket.io.js"></script>
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.4/jquery.min.js"></script>
   <script>
     var socket = io();
-    $('form').submit(function(event) {
-      socket.emit('chat message', $('#message').val());
-      $('#message').val('');
-      event.preventDefault();
+
+    $(document).ready(function() {
+      $('#submit').attr('disabled', true);
+
+      $('#message').keyup(function(){
+        $('#submit').prop('disabled', this.value.length === 0 ? true : false);
+      });
+
+      $('form').submit(function(event) {
+        socket.emit('chat message', $('#message').val());
+        $('#messages').append($('<tr style="background-color: #F5F5F5;"><td style="text-align: right; padding-right: 10px;">' + 'me: ' + $('#message').val() + '</td></tr>'));
+        $('#message').val('');
+        $('#submit').attr('disabled', true);
+        event.preventDefault();
+      });
+
+      $('#nickname').change(function(event) {
+        socket.emit('nickname', $('#nickname').val());
+        event.preventDefault();
+      });
+
+      socket.on('chat message', function(msg){
+        $('#messages').append($('<tr><td>' + msg + '</td></tr>'));
+      });
+
     });
-    $('#nickname').change(function(event) {
-      socket.emit('nickname', $('#nickname').val());
-      event.preventDefault();
-    });
-    socket.on('chat message', function(msg){
-      $('#messages').append($('<li>').text(msg));
-    });
+
   </script>
 </html>
