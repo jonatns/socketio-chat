@@ -17,10 +17,9 @@ html, body {
   position: fixed;
   bottom: 0;
   overflow-x: hidden;
+  text-align: center;
 }
 
-@media (max-width: 600px) {
-  .footer-container {
-    text-align: center;
+  input[type="text"] {
+    font-size:16px;
   }
-}
