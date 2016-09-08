@@ -45,6 +45,7 @@ io.on('connection', function(socket){
     }
   });
   socket.on('nickname', function(nickname) {
+
     for(var i = 0; i < users.length; i++) {
       if(users[i].id === socket.client.id) {
         users[i].nickname = nickname;
@@ -53,7 +54,18 @@ io.on('connection', function(socket){
     }
   });
   socket.on('image', function(image) {
-    io.emit('image', { image: true, buffer: image });
+    for(var i = 0; i < users.length; i++) {
+      if(users[i].id === socket.client.id) {
+        var nickname = users[i].nickname;
+        break;
+      }
+    }
+    if(nickname === '') {
+      socket.broadcast.emit('image', { image: true, buffer: image, nickname: 'anonymous'});
+    }
+    else {
+      socket.broadcast.emit('image', { image: true, buffer: image, nickname: nickname});
+    }
   });
 });
 
