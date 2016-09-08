@@ -69,7 +69,7 @@
             </div>
           </div>
           <div class="actions">
-            <div class="ui black deny button">
+            <div id="cancel-nickname" class="ui black deny button">
               Cancel
             </div>
             <div id="save-nickname" class="ui positive right labeled icon button">
@@ -141,6 +141,15 @@
         socket.emit('nickname', nickname);
         event.preventDefault();
       });
+
+
+      $('#cancel-nickname').on('click', function() {
+          nickname = 'anonymous';
+          $('#nickname-label').html('anonymous');
+          $('#choose-nickname-input').val('anonymous');
+          event.preventDefault();
+      });
+
 
       $('#share-image').on('click', function() {
         if(imageData !== '') {
