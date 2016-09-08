@@ -13,10 +13,10 @@
           <div class="ui form">
             <div class="fields">
               <div class="sixteen wide field" style="margin-top: 15px; padding-right: 15px;">
-                <a id="select-nickname-btn" class="ui green circular icon button">
+                <button id="select-nickname-btn" class="ui green circular icon button" value="non-default action">
                   <i class="child icon"></i>
                 </button>
-                <a style="display: none;" type="text" id="nickname" autocomplete="off" placeholder="nickname">
+                <input style="display: none;" type="text" id="nickname" autocomplete="off" placeholder="nickname">
               </div>
             </div>
           </div>
@@ -34,10 +34,9 @@
               <form class="ui form">
                 <div class="fields">
                   <div class="two wide field">
-                    <a id="select-image-btn" class="ui purple circular icon button">
+                    <a id="image-modal-btn" class="ui purple circular icon button" value="non-default action">
                       <i class="file image outline icon"></i>
                     </a>
-                    <input style="display: none;" class="button-primary" type="file" id="image-upload">
                   </div>
                   <div class="twelve wide field" style="padding-left: 5px;">
                     <div class="ui labeled input">
@@ -48,7 +47,7 @@
                     </div>
                   </div>
                   <div class="two wide field" style="padding-left: 8px; text-align: left;">
-                    <button id="submit" disabled="disabled" class="ui blue button circular icon button">
+                    <button id="submit" disabled="disabled" value="default action" class="ui blue button circular icon button">
                       <i class="send icon"></i>
                     </button>
                   </div>
@@ -80,6 +79,34 @@
           </div>
         </div>
 
+        <div class="ui small modal" id="image-modal">
+          <div class="header">Choose an image:</div>
+          <div class="content">
+            <div class="ui form">
+              <div class="fields">
+                <div class="inline sixteen wide column">
+                  <a id="select-image-btn" class="ui purple circular icon button" value="non-default action">
+                    <i class="file image outline icon"></i>
+                  </a>
+                  <div id="modal-tiny-image" class="ui tiny image">
+
+                  </div>
+                  <input style="display: none;" class="button-primary" type="file" id="image-upload">
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="actions">
+            <div id="cancel-image" class="ui black deny button">
+              Cancel
+            </div>
+            <div id="share-image" class="ui positive right labeled icon button">
+              share
+              <i class="checkmark icon"></i>
+            </div>
+          </div>
+        </div>
+
   </body>
 
   <script src="/socket.io/socket.io.js"></script>
@@ -91,6 +118,8 @@
     var socket = io();
     var nickname = 'anonymous';
     $('#choose-nickname-input').val(nickname);
+
+    var imageData = '';
 
     $(document).ready(function() {
       $('#submit').attr('disabled', true);
@@ -113,6 +142,27 @@
         event.preventDefault();
       });
 
+      $('#share-image').on('click', function() {
+        if(imageData !== '') {
+          emitImage(imageData);
+          $('#modal-image').remove();
+          imageData = '';
+        }
+        event.preventDefault();
+      });
+
+      $('#cancel-image').on('click', function() {
+        $('#modal-image').remove();
+        imageData = '';
+        event.preventDefault();
+      });
+
+
+      $('#image-modal-btn').on('click', function() {
+        $('#image-modal').modal('show');
+        event.preventDefault();
+      });
+
       $('#select-image-btn').on('click', function() {
           $('#image-upload').trigger('click');
           event.preventDefault();
@@ -121,7 +171,6 @@
       $('#message').keyup(function(){
         $('#submit').prop('disabled', this.value.length === 0 ? true : false);
       });
-
 
       $('form').submit(function(event) {
         socket.emit('chat message', $('#message').val());
@@ -132,26 +181,28 @@
       });
 
 
-      $('#image-upload').on('change', function(e){
-        //Get the first (and only one) file element
-        //that is included in the original event
-        var file = e.originalEvent.target.files[0],
-            reader = new FileReader();
-        //When the file has been read...
-        reader.onload = function(evt){
-            //Because of how the file was read,
-            //evt.target.result contains the image in base64 format
-            //Nothing special, just creates an img element
-            //and appends it to the DOM so my UI shows
-            //that I posted an image.
-            //send the image via Socket.io
-            socket.emit('image', evt.target.result);
-            $('#messages').append($('<div class="item" style="text-align: right; padding-right: 10px;"><div class="ui tiny image" style="font-size:16px;">' + 'me: ' + '<br><br><img src=' + evt.target.result + ' id="image" alt="" /></div></div>'));
-        };
-        //And now, read the image and base64
-        reader.readAsDataURL(file);
+      $('#image-upload').on('change', function(e) {
+        $('#modal-image').remove();
+        imageData = '';
+        if(e.originalEvent.target.files[0] !== undefined) {
+          var file = e.originalEvent.target.files[0],
+              reader = new FileReader();
+          reader.onload = function(evt){
+            setSelectedImageData(evt.target.result);
+            $('#modal-tiny-image').append($('<img id="modal-image" src=' + evt.target.result + ' id="image" alt="" />'));
+          };
+          reader.readAsDataURL(file);
+        }
       });
 
+      function setSelectedImageData(imageData) {
+        this.imageData = imageData;
+      }
+
+      function emitImage(imageData) {
+        socket.emit('image', imageData);
+        $('#messages').append($('<div class="item" style="text-align: right; padding-right: 10px;"><div class="ui tiny image" style="font-size:16px;">' + 'me: ' + '<br><br><img src=' + imageData + ' id="image" alt="" /></div></div>'));
+      }
 
       socket.on('chat message', function(msg){
         $('#messages').append($('<div class="item"><div class="content" style="padding-left: 10px;"><div class="header">' + msg + '</div></div></div>'));
