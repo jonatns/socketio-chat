@@ -3,36 +3,45 @@
   <head>
     <title>Socket.IO chat</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" href="css/skeleton.css">
+    <link rel="stylesheet" href="css/semantic.css">
     <link rel="stylesheet" href="css/style.css">
   </head>
 
   <body>
 
       <div class="message-container">
-          <div class="container">
-            <div class="row">
-              <div class="twelve columns">
-                <table id="messages" class="u-full-width">
-                </table>
-              </div>
-            </div>
-          </div>
+        <div id="message-raised-container" class="ui raised very padded text container segment">
+          <div id="messages" class="ui relaxed divided list"></div>
+        </div>
       </div>
 
         <div class="footer-container">
-          <div class="container">
-            <footer id="footer" class="twelve columns">
-              <form>
-                <div class="row">
-                  <div class="two columns">
-                    <input class="u-full-width" type="text" id="nickname" placeholder="nickname">
+          <div class="ui text container segment">
+            <footer id="footer">
+              <form class="ui form">
+                <div class="fields">
+                  <div class="four wide field">
+                    <button id="select-image-btn" class="ui purple circular icon button">
+                      <i class="file image outline icon"></i>
+                    </button>
+                    <button id="select-nickname-btn" class="ui green circular icon button">
+                      <i class="child icon"></i>
+                    </button>
+                    <input style="display: none;" type="text" id="nickname" autocomplete="off" placeholder="nickname">
+                    <input style="display: none;" class="button-primary" type="file" id="image-upload">
                   </div>
-                  <div class="eight columns">
-                    <input class="u-full-width" type="text" id="message" placeholder="message">
+                  <div class="nine wide field">
+                    <div class="ui labeled input">
+                      <div id="nickname-label" class="ui green label" style="width:20px;">
+                        anonymous
+                      </div>
+                      <input type="text" id="message"  autocomplete="off" placeholder="message">
+                    </div>
                   </div>
-                  <div class="two columns">
-                    <button id="submit" class="button-primary" disabled="disabled">Send</button>
+                  <div class="three wide field">
+                    <button id="submit" disabled="disabled" class="ui blue button circular icon button">
+                      <i class="send icon"></i>
+                    </button>
                   </div>
                 </div>
               </form>
@@ -40,15 +49,65 @@
           </div>
         </div>
 
+        <div class="ui small modal" id="nickname-modal">
+          <div class="header">Choose a nickname:</div>
+          <div class="content">
+            <div class="ui form">
+              <div class="fields">
+                <div class="inline sixteen wide column">
+                  <input type="text" id="choose-nickname-input" autocomplete="off" placeholder="nickname">
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="actions">
+            <div class="ui black deny button">
+              Cancel
+            </div>
+            <div id="save-nickname" class="ui positive right labeled icon button">
+              Done
+              <i class="checkmark icon"></i>
+            </div>
+          </div>
+        </div>
+
   </body>
 
   <script src="/socket.io/socket.io.js"></script>
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.4/jquery.min.js"></script>
+  <script src="/js/semantic.js"></script>
+  <script src="/js/socket.io-stream.js"></script>
+
   <script>
     var socket = io();
+    var nickname = 'anonymous';
+    $('#choose-nickname-input').val(nickname);
 
     $(document).ready(function() {
       $('#submit').attr('disabled', true);
+
+      $('#select-nickname-btn').on('click', function() {
+        $('.ui.small.modal').modal('show');
+        event.preventDefault();
+      });
+
+      $('#save-nickname').on('click', function() {
+        nickname = $('#choose-nickname-input').val();
+        if(nickname !== '') {
+          $('#nickname-label').html(nickname);
+        } else {
+          $('#nickname-label').html('anonymous');
+          $('#choose-nickname-input').val('anonymous');
+          nickname = 'anonymous';
+        }
+        socket.emit('nickname', nickname);
+        event.preventDefault();
+      });
+
+      $('#select-image-btn').on('click', function() {
+          $('#image-upload').trigger('click');
+          event.preventDefault();
+      });
 
       $('#message').keyup(function(){
         $('#submit').prop('disabled', this.value.length === 0 ? true : false);
@@ -56,19 +115,41 @@
 
       $('form').submit(function(event) {
         socket.emit('chat message', $('#message').val());
-        $('#messages').append($('<tr style="background-color: #F5F5F5;"><td style="text-align: right; padding-right: 10px;">' + 'me: ' + $('#message').val() + '</td></tr>'));
+        $('#messages').append($('<div class="item"><div class="content" style="text-align: right; padding-right: 10px;"><div class="header">' + 'me: ' + $('#message').val() + '</div></div></div>'));
         $('#message').val('');
         $('#submit').attr('disabled', true);
         event.preventDefault();
       });
 
-      $('#nickname').change(function(event) {
-        socket.emit('nickname', $('#nickname').val());
-        event.preventDefault();
+
+      $('#image-upload').on('change', function(e){
+        //Get the first (and only one) file element
+        //that is included in the original event
+        var file = e.originalEvent.target.files[0],
+            reader = new FileReader();
+        //When the file has been read...
+        reader.onload = function(evt){
+            //Because of how the file was read,
+            //evt.target.result contains the image in base64 format
+            //Nothing special, just creates an img element
+            //and appends it to the DOM so my UI shows
+            //that I posted an image.
+            //send the image via Socket.io
+            socket.emit('image', evt.target.result);
+        };
+        //And now, read the image and base64
+        reader.readAsDataURL(file);
       });
 
+
       socket.on('chat message', function(msg){
-        $('#messages').append($('<tr><td>' + msg + '</td></tr>'));
+        $('#messages').append($('<div class="item"><div class="content" style="padding-left: 10px;"><div class="header">' + msg + '</div></div></div>'));
+      });
+
+      socket.on('image', function(img){
+
+        $('#messages').append($('<tr><td><a href="" id="image-preview"><img src=' + img.buffer + ' id="image" alt="" /></a></td></tr>'));
+
       });
 
     });

@@ -2,6 +2,7 @@ var app = require('express')();
 var express = require('express');
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
+var fs = require('fs');
 
 app.use(express.static('public'));
 
@@ -13,7 +14,8 @@ var users = [];
 var me = '';
 
 io.on('connection', function(socket){
-    users.push({id: socket.client.id, nickname: ''});
+  users.push({id: socket.client.id, nickname: ''});
+
   socket.on('disconnect', function(){
     for(var i = 0; i < users.length; i++) {
       if(users[i].id === socket.client.id) {
@@ -28,7 +30,7 @@ io.on('connection', function(socket){
       }
     }
   });
-  socket.on('chat message', function(msg){
+  socket.on('chat message', function(msg) {
     for(var i = 0; i < users.length; i++) {
       if(users[i].id === socket.client.id) {
         var nickname = users[i].nickname;
@@ -42,13 +44,16 @@ io.on('connection', function(socket){
       socket.broadcast.emit('chat message', nickname + ': ' + msg);
     }
   });
-  socket.on('nickname', function(nickname){
+  socket.on('nickname', function(nickname) {
     for(var i = 0; i < users.length; i++) {
       if(users[i].id === socket.client.id) {
         users[i].nickname = nickname;
         break;
       }
     }
+  });
+  socket.on('image', function(image) {
+    io.emit('image', { image: true, buffer: image });
   });
 });
 
